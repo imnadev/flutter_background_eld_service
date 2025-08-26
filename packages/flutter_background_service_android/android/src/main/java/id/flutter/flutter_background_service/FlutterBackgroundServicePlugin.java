@@ -9,6 +9,8 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 
+import com.pt.sdk.Sdk;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -23,6 +25,8 @@ import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 import io.flutter.plugin.common.MethodChannel.Result;
+import io.imnadev.pt30.BleProfileService;
+import io.imnadev.pt30.DefaultLogger;
 
 /**
  * FlutterBackgroundServicePlugin
@@ -40,7 +44,7 @@ public class FlutterBackgroundServicePlugin implements FlutterPlugin, MethodCall
     public static final Pipe servicePipe = new Pipe();
     public static final Pipe mainPipe = new Pipe();
 
-    public static void registerWith(FlutterEngine engine){
+    public static void registerWith(FlutterEngine engine) {
         Log.d(TAG, "registering with FlutterEngine");
     }
 
@@ -66,12 +70,19 @@ public class FlutterBackgroundServicePlugin implements FlutterPlugin, MethodCall
         eventChannel.setStreamHandler(this);
 
         mainPipe.addListener(listener);
+
+        Sdk.getInstance().setLogger(new DefaultLogger());
+        Sdk.getInstance().initialize(context);
+        Sdk.getInstance().setApiKey("EdsueeczUi9fzCn6C6tP52rLCBWwJk0naO0vAsGx");
     }
 
-    private void start() {
+    private void start(String address, String name) {
         WatchdogReceiver.enqueue(context);
         boolean isForeground = config.isForeground();
         Intent intent = new Intent(context, BackgroundService.class);
+
+        intent.putExtra(BleProfileService.EXTRA_DEVICE_ADDRESS, address);
+        intent.putExtra(BleProfileService.EXTRA_DEVICE_NAME, name);
 
         if (isForeground) {
             ContextCompat.startForegroundService(context, intent);
@@ -118,7 +129,7 @@ public class FlutterBackgroundServicePlugin implements FlutterPlugin, MethodCall
                 config.setForegroundServiceTypes(foregroundServiceTypesStr);
 
                 if (autoStart) {
-                    start();
+                    start(null, null);
                 }
 
                 result.success(true);
@@ -126,14 +137,16 @@ public class FlutterBackgroundServicePlugin implements FlutterPlugin, MethodCall
             }
 
             if ("start".equals(method)) {
-                start();
+                String address = arg.getString("device_address");
+                String name = arg.getString("device_name");
+                start(address, name);
                 result.success(true);
                 return;
             }
 
             if (method.equalsIgnoreCase("sendData")) {
-                synchronized (servicePipe){
-                    if (servicePipe.hasListener()){
+                synchronized (servicePipe) {
+                    if (servicePipe.hasListener()) {
                         servicePipe.invoke((JSONObject) call.arguments);
                         result.success(true);
                         return;
@@ -172,7 +185,7 @@ public class FlutterBackgroundServicePlugin implements FlutterPlugin, MethodCall
         channel.setMethodCallHandler(null);
         channel = null;
 
-        synchronized (eventSinks){
+        synchronized (eventSinks) {
             eventSinks.clear();
         }
         eventChannel.setStreamHandler(null);
@@ -181,7 +194,7 @@ public class FlutterBackgroundServicePlugin implements FlutterPlugin, MethodCall
 
     private void receiveData(JSONObject data) {
         final JSONObject arg = data;
-        synchronized (this){
+        synchronized (this) {
             for (EventChannel.EventSink sink :
                     eventSinks.values()) {
                 mainHandler.post(new Runnable() {
@@ -196,14 +209,14 @@ public class FlutterBackgroundServicePlugin implements FlutterPlugin, MethodCall
 
     @Override
     public void onListen(Object arguments, EventChannel.EventSink events) {
-        synchronized (this){
+        synchronized (this) {
             eventSinks.put(arguments, events);
         }
     }
 
     @Override
     public void onCancel(Object arguments) {
-        synchronized (this){
+        synchronized (this) {
             eventSinks.remove(arguments);
         }
     }

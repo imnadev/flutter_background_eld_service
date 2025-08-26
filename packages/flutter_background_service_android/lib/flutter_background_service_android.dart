@@ -31,6 +31,7 @@ class FlutterBackgroundServiceAndroid extends FlutterBackgroundServicePlatform {
   }
 
   FlutterBackgroundServiceAndroid._();
+
   static final FlutterBackgroundServiceAndroid _instance =
       FlutterBackgroundServiceAndroid._();
 
@@ -55,8 +56,14 @@ class FlutterBackgroundServiceAndroid extends FlutterBackgroundServicePlatform {
     }
   }
 
-  Future<bool> start() async {
-    final result = await _channel.invokeMethod('start');
+  Future<bool> start({String? address, String? name}) async {
+    final result = await _channel.invokeMethod(
+      'start',
+      {
+        'device_address': address,
+        'device_name': name,
+      },
+    );
     return result ?? false;
   }
 
@@ -71,6 +78,7 @@ class FlutterBackgroundServiceAndroid extends FlutterBackgroundServicePlatform {
   );
 
   StreamSubscription<dynamic>? _eventChannelListener;
+
   Future<bool> configure({
     required IosConfiguration iosConfiguration,
     required AndroidConfiguration androidConfiguration,
@@ -167,6 +175,7 @@ class AndroidServiceInstance extends ServiceInstance {
   }
 
   final _controller = StreamController.broadcast(sync: true);
+
   Future<void> _handleMethodCall(MethodCall call) async {
     switch (call.method) {
       case "onReceiveData":
@@ -195,6 +204,7 @@ class AndroidServiceInstance extends ServiceInstance {
       StreamTransformer.fromHandlers(
         handleData: (data, sink) {
           if (data['method'] == method) {
+            print(data['args']);
             sink.add(data['args']);
           }
         },

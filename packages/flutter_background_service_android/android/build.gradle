@@ -1,7 +1,13 @@
 group 'id.flutter.flutter_background_service'
 version '1.0'
 
+configurations.maybeCreate("default")
+artifacts.add("default", file('pt-sdk-release.aar'))
+
 buildscript {
+    ext {
+        kotlin_version = '2.0.21'
+    }
     repositories {
         google()
         mavenCentral()
@@ -9,6 +15,7 @@ buildscript {
 
     dependencies {
         classpath 'com.android.tools.build:gradle:7.4.2'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
@@ -16,26 +23,51 @@ rootProject.allprojects {
     repositories {
         google()
         mavenCentral()
+
+        flatDir {
+            dirs("pt-sdk-release")
+        }
     }
 }
 
 apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'
 
 android {
-    compileSdkVersion 34
+    compileSdkVersion 36
 
     namespace = "id.flutter.flutter_background_service"
-    
+
     defaultConfig {
-        minSdkVersion 16
+        minSdkVersion 26
         consumerProguardFiles 'proguard-rules.pro'
     }
 
     lintOptions {
         disable 'InvalidPackage'
     }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
 }
 
 dependencies {
-  implementation "androidx.core:core:1.12.0"
+    implementation "androidx.core:core:1.12.0"
+//    implementation files('/Users/imnadev/development/flutter/bin/cache/artifacts/engine/android-arm64-release/flutter.jar')
+
+    // Nordic
+    implementation 'no.nordicsemi.android.support.v18:scanner:1.6.0'
+    implementation 'no.nordicsemi.android:log:2.3.0'
+    implementation 'no.nordicsemi.android:ble-common:2.7.2'
+
+    implementation 'commons-net:commons-net:20030805.205232'
+    implementation 'com.google.code.gson:gson:2.10.1'
+
+    implementation 'androidx.localbroadcastmanager:localbroadcastmanager:1.1.0'
+    implementation 'androidx.preference:preference:1.2.1'
+    implementation 'androidx.core:core-ktx:1.17.0'
+    implementation 'com.jakewharton.timber:timber:5.0.1'
+
+    implementation(name:'pt-sdk-release', ext:'aar')
+
 }

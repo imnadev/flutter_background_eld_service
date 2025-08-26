@@ -1,0 +1,12 @@
+package io.imnadev.pt30
+
+enum class TrackerAction(val action: String) {
+    REFRESH("REFRESH"),
+    TRACKER("TRACKER-REFRESH"),
+    SE("TRACKER-SE-REFRESH"),
+    SPN("TRACKER-SPN-REFRESH"),
+    VIN("TRACKER-VIN-REFRESH"),
+    DTC("TRACKER-DTC-REFRESH"),
+    DASHBOARD("TRACKER-DASHBOARD-REFRESH"),
+    UPDATE("TRACKER-UPDATE")
+}

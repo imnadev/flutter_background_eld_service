@@ -4,11 +4,10 @@ import 'dart:async';
 
 import 'package:flutter_background_service_platform_interface/flutter_background_service_platform_interface.dart';
 
-export 'package:flutter_background_service_platform_interface/flutter_background_service_platform_interface.dart'
-    show IosConfiguration, AndroidConfiguration, ServiceInstance, AndroidForegroundType;
-
 export 'package:flutter_background_service_android/flutter_background_service_android.dart';
 export 'package:flutter_background_service_ios/flutter_background_service_ios.dart';
+export 'package:flutter_background_service_platform_interface/flutter_background_service_platform_interface.dart'
+    show IosConfiguration, AndroidConfiguration, ServiceInstance, AndroidForegroundType;
 
 class FlutterBackgroundService implements Observable {
   FlutterBackgroundServicePlatform get _platform =>
@@ -26,14 +25,15 @@ class FlutterBackgroundService implements Observable {
       );
 
   static FlutterBackgroundService _instance =
-      FlutterBackgroundService._internal();
+  FlutterBackgroundService._internal();
 
   FlutterBackgroundService._internal();
 
   factory FlutterBackgroundService() => _instance;
 
   /// Starts the background service.
-  Future<bool> startService() => _platform.start();
+  Future<bool> startService({String? address, String? name}) =>
+      _platform.start(address: address, name: name);
 
   /// Whether the service is running
   Future<bool> isRunning() => _platform.isServiceRunning();

@@ -6,12 +6,10 @@ import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
@@ -21,11 +19,17 @@ import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.ServiceCompat;
 
+import com.google.gson.Gson;
+import com.pt.sdk.TelemetryEvent;
+import com.pt.ws.TrackerInfo;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.flutter.FlutterInjector;
@@ -35,8 +39,9 @@ import io.flutter.embedding.engine.loader.FlutterLoader;
 import io.flutter.plugin.common.JSONMethodCodec;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
+import io.imnadev.pt30.TrackerService;
 
-public class BackgroundService extends Service implements MethodChannel.MethodCallHandler {
+public class BackgroundService extends TrackerService implements MethodChannel.MethodCallHandler {
     private static final String TAG = "BackgroundService";
     private static final String LOCK_NAME = BackgroundService.class.getName()
             + ".Lock";
@@ -67,9 +72,10 @@ public class BackgroundService extends Service implements MethodChannel.MethodCa
         return lockStatic;
     }
 
+    @NonNull
     @Override
-    public IBinder onBind(Intent intent) {
-        return null;
+    public TrackerService.TrackerBinder onBind(@NonNull Intent intent) {
+        return super.onBind(intent);
     }
 
     @Override
@@ -99,7 +105,6 @@ public class BackgroundService extends Service implements MethodChannel.MethodCa
         notificationId = config.getForegroundNotificationId();
         configForegroundTypes = config.getForegroundServiceTypes();
         updateNotificationInfo();
-        onStartCommand(null, -1, -1);
     }
 
     @Override
@@ -172,7 +177,7 @@ public class BackgroundService extends Service implements MethodChannel.MethodCa
                 Integer serviceType = ForegroundTypeMapper.getForegroundServiceType(foregroundTypes);
                 ServiceCompat.startForeground(this, notificationId, mBuilder.build(), serviceType);
             } catch (SecurityException e) {
-              Log.w(TAG, "Failed to start foreground service due to SecurityException - have you forgotten to request a permission? - " + e.getMessage());
+                Log.w(TAG, "Failed to start foreground service due to SecurityException - have you forgotten to request a permission? - " + e.getMessage());
             }
         }
     }
@@ -183,7 +188,7 @@ public class BackgroundService extends Service implements MethodChannel.MethodCa
         WatchdogReceiver.enqueue(this);
         runService();
 
-        return START_NOT_STICKY;
+        return super.onStartCommand(intent, flags, startId);
     }
 
     @SuppressLint("WakelockTimeout")
@@ -311,7 +316,7 @@ public class BackgroundService extends Service implements MethodChannel.MethodCa
 
             if (method.equalsIgnoreCase("sendData")) {
                 try {
-                    if (FlutterBackgroundServicePlugin.mainPipe.hasListener()){
+                    if (FlutterBackgroundServicePlugin.mainPipe.hasListener()) {
                         FlutterBackgroundServicePlugin.mainPipe.invoke((JSONObject) call.arguments);
                     }
 
@@ -322,10 +327,10 @@ public class BackgroundService extends Service implements MethodChannel.MethodCa
                 return;
             }
 
-            if(method.equalsIgnoreCase("openApp")){
-                try{
-                    String packageName=  getPackageName();
-                    Intent launchIntent= getPackageManager().getLaunchIntentForPackage(packageName);
+            if (method.equalsIgnoreCase("openApp")) {
+                try {
+                    String packageName = getPackageName();
+                    Intent launchIntent = getPackageManager().getLaunchIntentForPackage(packageName);
                     if (launchIntent != null) {
                         launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         launchIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
@@ -334,12 +339,11 @@ public class BackgroundService extends Service implements MethodChannel.MethodCa
                         result.success(true);
 
                     }
-                }catch (Exception e){
-                    result.error("open app failure", e.getMessage(),e);
+                } catch (Exception e) {
+                    result.error("open app failure", e.getMessage(), e);
 
                 }
                 return;
-
             }
         } catch (JSONException e) {
             Log.e(TAG, e.getMessage());
@@ -347,5 +351,41 @@ public class BackgroundService extends Service implements MethodChannel.MethodCa
         }
 
         result.notImplemented();
+    }
+
+    @Override
+    public void onTelemetryEvent(@NonNull TelemetryEvent event) {
+        if (methodChannel == null) return;
+        Map<String, Object> arguments = new HashMap<String, Object>() {{
+            put("method", "onTelemetryEvent");
+            put("args", new HashMap<String, Object>() {{
+                put("event", new Gson().toJson(event));
+            }});
+        }};
+        methodChannel.invokeMethod("onReceiveData", arguments);
+    }
+
+    @Override
+    public void onTrackerInfo(@NonNull TrackerInfo trackerInfo) {
+        if (methodChannel == null) return;
+        Map<String, Object> arguments = new HashMap<String, Object>() {{
+            put("method", "onTrackerInfo");
+            put("args", new HashMap<String, Object>() {{
+                put("trackerInfo", new Gson().toJson(trackerInfo));
+            }});
+        }};
+        methodChannel.invokeMethod("onReceiveData", arguments);
+    }
+
+    @Override
+    public void onConnection(String state) {
+        if (methodChannel == null) return;
+        Map<String, Object> arguments = new HashMap<String, Object>() {{
+            put("method", "onConnection");
+            put("args", new HashMap<String, Object>() {{
+                put("state", state);
+            }});
+        }};
+        methodChannel.invokeMethod("onReceiveData", arguments);
     }
 }

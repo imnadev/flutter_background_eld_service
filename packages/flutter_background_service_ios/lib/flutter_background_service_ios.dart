@@ -55,8 +55,14 @@ class FlutterBackgroundServiceIOS extends FlutterBackgroundServicePlatform {
     return true;
   }
 
-  Future<bool> start() async {
-    final result = await _channel.invokeMethod('start');
+  Future<bool> start({String? address, String? name}) async {
+    final result = await _channel.invokeMethod(
+      'start',
+      {
+        'device_address': address,
+        'device_name': name,
+      },
+    );
     return result ?? false;
   }
 
@@ -132,6 +138,7 @@ class IOSServiceInstance extends ServiceInstance {
   }
 
   final _controller = StreamController.broadcast(sync: true);
+
   Future<void> _handleMethodCall(MethodCall call) async {
     switch (call.method) {
       case "onReceiveData":

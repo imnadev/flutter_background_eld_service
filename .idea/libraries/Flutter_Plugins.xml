@@ -1,0 +1,11 @@
+<component name="libraryTable">
+  <library name="Flutter Plugins" type="FlutterPluginsLibraryType">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/packages/flutter_background_service_android" />
+      <root url="file://$PROJECT_DIR$/packages/flutter_background_service_ios" />
+      <root url="file://$PROJECT_DIR$/packages/flutter_background_service" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

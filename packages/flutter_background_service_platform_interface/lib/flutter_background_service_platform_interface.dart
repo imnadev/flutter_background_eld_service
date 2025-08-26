@@ -37,7 +37,7 @@ abstract class FlutterBackgroundServicePlatform extends PlatformInterface
     required AndroidConfiguration androidConfiguration,
   });
 
-  Future<bool> start();
+  Future<bool> start({String? address, String? name});
 
   Future<bool> isServiceRunning();
 }
